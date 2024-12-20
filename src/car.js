@@ -3,11 +3,11 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 let car;
 let velocity = { x: 0, z: 0 };
-let rotation = 0; 
-const acceleration = 0.05; 
-const maxSpeed = 0.2; 
-const friction = 0.97; 
-const rotationSpeed = 0.02; 
+let rotation = 0;
+const acceleration = 0.005;
+const maxSpeed = 0.05;
+const friction = 0.97;
+const rotationSpeed = 0.02;
 let isAccelerating = false;
 let isReversing = false;
 let isTurningLeft = false;
@@ -18,8 +18,8 @@ const loadCar = (scene) => {
   const loader = new GLTFLoader();
   loader.load('/models/car.glb', function (gltf) {
     car = gltf.scene;
-    car.scale.set(0.5, 0.5, 0.5); 
-    car.position.set(21, 0, 0); 
+    car.scale.set(0.5, 0.5, 0.5);
+    car.position.set(21, 0, 0);
     scene.add(car);
   }, undefined, function (error) {
     console.error('Error loading car model:', error);
@@ -27,28 +27,28 @@ const loadCar = (scene) => {
 };
 
 const controlCar = (keyCode, isKeyDown) => {
-  if (!car) return; 
+  if (!car) return;
 
   switch (keyCode) {
-    case 'w': 
+    case 'w':
       isAccelerating = isKeyDown;
       break;
-    case 's': 
+    case 's':
       isReversing = isKeyDown;
       break;
     case 'a':
       isTurningLeft = isKeyDown;
       break;
-    case 'd': 
+    case 'd':
       isTurningRight = isKeyDown;
       break;
-    case 'k': 
+    case 'k':
       if (isKeyDown) {
         isThirdPersonView = !isThirdPersonView;
       }
       break;
     default:
-        break;
+      break;
   }
 };
 
@@ -56,7 +56,7 @@ const updateCarPosition = (camera) => {
   if (!car) return;
 
   if (isAccelerating) {
-    velocity.z = Math.min(velocity.z + acceleration, maxSpeed); 
+    velocity.z = Math.min(velocity.z + acceleration, maxSpeed);
   } else if (isReversing) {
     velocity.z = Math.max(velocity.z - acceleration, -maxSpeed / 2);
   }
