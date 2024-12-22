@@ -1,5 +1,6 @@
-// car.js
+import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { treeBoundingBoxes } from "./tree"; // Impor bounding box pohon
 
 let car;
 let velocity = { x: 0, z: 0 };
@@ -13,6 +14,7 @@ let isReversing = false;
 let isTurningLeft = false;
 let isTurningRight = false;
 let isThirdPersonView = false;
+const carBoundingBox = new THREE.Box3();
 
 const loadCar = (scene) => {
   const loader = new GLTFLoader();
@@ -23,6 +25,7 @@ const loadCar = (scene) => {
       car.scale.set(0.5, 0.5, 0.5);
       car.position.set(21, 0, 0);
       scene.add(car);
+      carBoundingBox.setFromObject(car);
     },
     undefined,
     function (error) {
@@ -65,6 +68,11 @@ const controlCar = (keyCode, isKeyDown) => {
 const updateCarPosition = (camera) => {
   if (!car) return;
 
+  // Simpan posisi lama untuk rollback jika terjadi tabrakan
+  const oldX = car.position.x;
+  const oldZ = car.position.z;
+
+  // Perbarui kecepatan mobil
   if (isAccelerating) {
     velocity.z = Math.min(velocity.z + acceleration, maxSpeed);
   } else if (isReversing) {
@@ -78,11 +86,36 @@ const updateCarPosition = (camera) => {
     rotation -= rotationSpeed;
   }
 
+  // Hitung posisi baru mobil
+  const newX = car.position.x + Math.sin(rotation) * velocity.z;
+  const newZ = car.position.z + Math.cos(rotation) * velocity.z;
+
+  // Update posisi sementara mobil
+  car.position.set(newX, car.position.y, newZ);
+
+  // Perbarui bounding box mobil
+  const carBoundingBox = new THREE.Box3().setFromObject(car);
+
+  // Deteksi tabrakan dengan pohon
+  let collisionDetected = false;
+  for (let treeBox of treeBoundingBoxes) {
+    if (carBoundingBox.intersectsBox(treeBox)) {
+      collisionDetected = true;
+      break;
+    }
+  }
+
+  if (collisionDetected) {
+    console.log("Collision with tree detected!");
+    // Rollback posisi mobil
+    car.position.set(oldX, car.position.y, oldZ);
+    velocity.z = 0; // Hentikan kecepatan
+  }
+
+  // Perbarui rotasi mobil
   car.rotation.y = rotation;
 
-  car.position.x += Math.sin(rotation) * velocity.z;
-  car.position.z += Math.cos(rotation) * velocity.z;
-
+  // Perbarui kamera (third-person atau default)
   if (isThirdPersonView && camera) {
     const offset = 5;
     camera.position.set(car.position.x - Math.sin(rotation) * offset, car.position.y + 5, car.position.z - Math.cos(rotation) * offset);

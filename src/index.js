@@ -5,7 +5,7 @@ import { ambientLight, directionalLight } from "./lighting";
 import loadTrack from "./track";
 import { loadCar, controlCar, updateCarPosition } from "./car";
 import loadStadion from "./stadion";
-import loadTrees from "./tree";
+import { loadTrees, treeBoundingBoxes } from "./tree";
 import loadCactus from "./cactus.js";
 
 const scene = new THREE.Scene();
@@ -29,8 +29,8 @@ scene.add(directionalLight);
 loadStadion(scene);
 loadTrack(scene);
 loadCar(scene);
-loadTrees(scene, treePositions);  // Corrected here
-loadCactus(scene, cactusPositions);  // Corrected here
+loadTrees(scene, treePositions);
+loadCactus(scene, cactusPositions);
 
 window.addEventListener("keydown", (event) => {
   controlCar(event.key, true);
@@ -41,7 +41,7 @@ window.addEventListener("keyup", (event) => {
 
 function animate() {
   requestAnimationFrame(animate);
-  updateCarPosition(camera);
+  updateCarPosition(camera, treeBoundingBoxes);
   renderer.render(scene, camera);
 }
 
