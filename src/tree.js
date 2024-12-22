@@ -6,7 +6,7 @@ let treeBoundingBoxes = [];
 const loadTrees = (scene, positions) => {
   const loader = new GLTFLoader();
   loader.load(
-    "/models/Tree1.glb",
+    "/models/tree.glb",
     function (gltf) {
       positions.forEach((position) => {
         const tree = gltf.scene.clone(); // Clone pohon untuk setiap posisi

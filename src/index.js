@@ -7,16 +7,16 @@ import { loadCar, controlCar, updateCarPosition } from "./car";
 import loadStadion from "./stadion";
 import loadTrackAcc from "./track_acc";
 import { loadTrees, treeBoundingBoxes } from "./tree";
+import loadChampions from "./champion";
 
 const scene = new THREE.Scene();
 
 const treePositions = [
-  { x: -25, y: 0, z: 0 },
-  { x: -25, y: 0, z: 1 },
+  { x: -15, y: 0, z: 0 },
+  { x: -25, y: 0, z: 10 },
   { x: 5, y: 0, z: -10 },
-  { x: 15, y: 0, z: 20 },
+  { x: 15, y: 0, z: 25 },
 ];
-
 scene.add(ambientLight);
 scene.add(directionalLight);
 
@@ -25,6 +25,7 @@ loadTrack(scene);
 loadCar(scene);
 loadTrees(scene, treePositions);
 loadTrackAcc(scene);
+loadChampions(scene);
 
 window.addEventListener("keydown", (event) => {
   controlCar(event.key, true);
