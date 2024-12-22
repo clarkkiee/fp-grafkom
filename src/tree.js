@@ -1,7 +1,7 @@
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import * as THREE from "three"; // Tambahkan impor THREE
 
-let treeBoundingBoxes = []; // Array untuk menyimpan bounding box pohon
+let treeBoundingBoxes = [];
 
 const loadTrees = (scene, positions) => {
   const loader = new GLTFLoader();
