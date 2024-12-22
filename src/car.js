@@ -1,12 +1,13 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { treeBoundingBoxes } from "./tree"; // Impor bounding box pohon
+import { cactusBoundingBoxes } from "./track"; // Impor bounding boxes untuk kaktus
 
 let car;
 let velocity = { x: 0, z: 0 };
 let rotation = 0;
 const acceleration = 0.005;
-const maxSpeed = 0.09;
+const maxSpeed = 0.1;
 const friction = 0.97;
 const rotationSpeed = 0.02;
 let isAccelerating = false;
@@ -66,65 +67,87 @@ const controlCar = (keyCode, isKeyDown) => {
 };
 
 const updateCarPosition = (camera) => {
-  if (!car) return;
+    if (!car) return;
 
-  // Simpan posisi lama untuk rollback jika terjadi tabrakan
-  const oldX = car.position.x;
-  const oldZ = car.position.z;
+    // Simpan posisi lama untuk rollback jika terjadi tabrakan
+    const oldX = car.position.x;
+    const oldZ = car.position.z;
 
-  // Perbarui kecepatan mobil
-  if (isAccelerating) {
-    velocity.z = Math.min(velocity.z + acceleration, maxSpeed);
-  } else if (isReversing) {
-    velocity.z = Math.max(velocity.z - acceleration, -maxSpeed / 2);
-  }
-
-  if (isTurningLeft) {
-    rotation += rotationSpeed;
-  }
-  if (isTurningRight) {
-    rotation -= rotationSpeed;
-  }
-
-  // Hitung posisi baru mobil
-  const newX = car.position.x + Math.sin(rotation) * velocity.z;
-  const newZ = car.position.z + Math.cos(rotation) * velocity.z;
-
-  // Update posisi sementara mobil
-  car.position.set(newX, car.position.y, newZ);
-
-  // Perbarui bounding box mobil
-  const carBoundingBox = new THREE.Box3().setFromObject(car);
-
-  // Deteksi tabrakan dengan pohon
-  let collisionDetected = false;
-  for (let treeBox of treeBoundingBoxes) {
-    if (carBoundingBox.intersectsBox(treeBox)) {
-      collisionDetected = true;
-      break;
+    // Perbarui kecepatan mobil
+    if (isAccelerating) {
+        velocity.z = Math.min(velocity.z + acceleration, maxSpeed);
+    } else if (isReversing) {
+        velocity.z = Math.max(velocity.z - acceleration, -maxSpeed / 2);
     }
-  }
 
-  if (collisionDetected) {
-    console.log("Collision with tree detected!");
-    // Rollback posisi mobil
-    car.position.set(oldX, car.position.y, oldZ);
-    velocity.z = 0; // Hentikan kecepatan
-  }
+    if (isTurningLeft) {
+        rotation += rotationSpeed;
+    }
+    if (isTurningRight) {
+        rotation -= rotationSpeed;
+    }
 
-  // Perbarui rotasi mobil
-  car.rotation.y = rotation;
+    // Hitung posisi baru mobil
+    const newX = car.position.x + Math.sin(rotation) * velocity.z;
+    const newZ = car.position.z + Math.cos(rotation) * velocity.z;
 
-  // Perbarui kamera (third-person atau default)
-  if (isThirdPersonView && camera) {
-    const offset = 5;
-    camera.position.set(car.position.x - Math.sin(rotation) * offset, car.position.y + 5, car.position.z - Math.cos(rotation) * offset);
-    camera.lookAt(car.position.x, car.position.y, car.position.z);
-  } else if (camera) {
-    camera.position.set(20, 20, 20);
-    camera.lookAt(0, 0, 0);
-  }
+    // Update posisi sementara mobil
+    car.position.set(newX, car.position.y, newZ);
+
+    // Perbarui bounding box mobil
+    const carBoundingBox = new THREE.Box3().setFromObject(car);
+    console.log("Car bounding box:", carBoundingBox); // Debug bounding box mobil
+
+    // Deteksi tabrakan
+    let collisionDetected = false;
+
+    // Cek tabrakan dengan pohon
+    for (let treeBox of treeBoundingBoxes) {
+        if (carBoundingBox.intersectsBox(treeBox)) {
+            collisionDetected = true;
+            console.log("Collision with tree detected!");
+            break;
+        }
+    }
+
+    // Cek tabrakan dengan kaktus
+    if (cactusBoundingBoxes.length === 0) {
+        console.error("No cactus bounding boxes found!");
+    } else {
+        for (let cactusBox of cactusBoundingBoxes) {
+            if (cactusBox && carBoundingBox.intersectsBox(cactusBox)) {
+                collisionDetected = true;
+                console.log("Collision with cactus detected!");
+                break;
+            }
+        }
+    }
+
+    // Jika ada tabrakan, rollback posisi
+    if (collisionDetected) {
+        car.position.set(oldX, car.position.y, oldZ);
+        velocity.z = 0; // Hentikan kecepatan mobil
+    }
+
+    // Perbarui rotasi mobil
+    car.rotation.y = rotation;
+
+    // Perbarui kamera (third-person atau default)
+    if (isThirdPersonView && camera) {
+        const offset = 5;
+        camera.position.set(
+            car.position.x - Math.sin(rotation) * offset,
+            car.position.y + 5,
+            car.position.z - Math.cos(rotation) * offset
+        );
+        camera.lookAt(car.position.x, car.position.y, car.position.z);
+    } else if (camera) {
+        camera.position.set(20, 20, 20);
+        camera.lookAt(0, 0, 0);
+    }
 };
+
+
 
 const resetCarPosition = () => {
   if (!car) return;

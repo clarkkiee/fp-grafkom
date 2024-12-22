@@ -2,7 +2,7 @@ import * as THREE from "three";
 import camera from "./camera";
 import renderer from "./renderer";
 import { ambientLight, directionalLight } from "./lighting";
-import loadTrack from "./track";
+import {loadTrack} from "./track";
 import { loadCar, controlCar, updateCarPosition } from "./car";
 import loadStadion from "./stadion";
 import { loadTrees, treeBoundingBoxes } from "./tree";
