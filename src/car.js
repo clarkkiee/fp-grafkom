@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { treeBoundingBoxes } from "./tree"; // Impor bounding box pohon
 import { cactusBoundingBoxes } from "./track"; // Impor bounding boxes untuk kaktus
+import { trackAccBoundingBox } from "./track_acc"; // Impor bounding box untuk track_acc
 
 let car;
 let velocity = { x: 0, z: 0 };
@@ -17,6 +18,12 @@ let isTurningRight = false;
 let isThirdPersonView = false;
 const carBoundingBox = new THREE.Box3();
 
+const lapTimeDisplay = document.getElementById("lap-time-display"); // Ambil elemen HTML untuk waktu lap
+let timerStarted = false; // Status apakah timer sudah dimulai
+let lapStartTime = 0; // Waktu awal lap
+let lapTime = 0; // Total waktu lap
+let hasPassedTrackAcc = false; // Apakah mobil sudah melewati track_acc
+
 const loadCar = (scene) => {
   const loader = new GLTFLoader();
   loader.load(
@@ -24,7 +31,7 @@ const loadCar = (scene) => {
     function (gltf) {
       car = gltf.scene;
       car.scale.set(0.8, 0.8, 0.8);
-      car.position.set(21, 0, 0);
+      car.position.set(21, 0, -3);
       scene.add(car);
       carBoundingBox.setFromObject(car);
     },
@@ -101,6 +108,26 @@ const updateCarPosition = (camera) => {
   // Deteksi tabrakan
   let collisionDetected = false;
 
+  if (trackAccBoundingBox && carBoundingBox.intersectsBox(trackAccBoundingBox)) {
+    if (!timerStarted) {
+      timerStarted = true;
+      lapStartTime = performance.now();
+      console.log("Timer started!");
+    } else if (!hasPassedTrackAcc) {
+      lapTime = performance.now() - lapStartTime;
+      console.log(`Lap completed in ${(lapTime / 1000).toFixed(2)} seconds`);
+
+      // Perbarui teks pada layar
+      lapTimeDisplay.textContent = `Lap Time: ${(lapTime / 1000).toFixed(2)} s`;
+
+      timerStarted = false;
+    }
+
+    hasPassedTrackAcc = true;
+  } else {
+    hasPassedTrackAcc = false;
+  }
+
   // Cek tabrakan dengan pohon
   for (let treeBox of treeBoundingBoxes) {
     if (carBoundingBox.intersectsBox(treeBox)) {
@@ -135,11 +162,7 @@ const updateCarPosition = (camera) => {
   // Perbarui kamera (third-person atau default)
   if (isThirdPersonView && camera) {
     const offset = 7;
-    camera.position.set(
-      car.position.x - Math.sin(rotation) * offset,
-      car.position.y + 5,
-      car.position.z - Math.cos(rotation) * offset
-    );
+    camera.position.set(car.position.x - Math.sin(rotation) * offset, car.position.y + 5, car.position.z - Math.cos(rotation) * offset);
     camera.lookAt(car.position.x, car.position.y, car.position.z);
   } else if (camera) {
     camera.position.set(20, 20, 20);
@@ -147,15 +170,21 @@ const updateCarPosition = (camera) => {
   }
 };
 
-
-
 const resetCarPosition = () => {
   if (!car) return;
 
-  car.position.set(21, 0, 0); // Posisi awal mobil
+  // Reset posisi mobil
+  car.position.set(21, 0, -3); // Posisi awal mobil
   car.rotation.set(0, 0, 0); // Rotasi awal mobil
   velocity = { x: 0, z: 0 }; // Kecepatan awal
   rotation = 0; // Rotasi awal
+
+  // Reset timer
+  timerStarted = false; // Timer dihentikan
+  lapTime = 0; // Reset waktu lap
+  lapStartTime = 0; // Reset waktu awal lap
+  lapTimeDisplay.textContent = "Lap Time: 0.00 s"; // Tampilkan kembali teks awal untuk timer
+  console.log("Car and timer reset to initial state");
 };
 
 if (!isAccelerating && !isReversing) {
