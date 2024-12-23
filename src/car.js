@@ -1,28 +1,31 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { treeBoundingBoxes } from "./tree"; // Impor bounding box pohon
-import { cactusBoundingBoxes } from "./track"; // Impor bounding boxes untuk kaktus
-import { trackAccBoundingBox } from "./track_acc"; // Impor bounding box untuk track_acc
+import { treeBoundingBoxes } from "./tree"; 
+import { cactusBoundingBoxes } from "./track"; 
+import { trackAccBoundingBox } from "./track_acc"; 
 
 let car;
 let velocity = { x: 0, z: 0 };
 let rotation = 0;
 const acceleration = 0.005;
-const maxSpeed = 0.1;
+let maxSpeed = 0.1; // Kecepatan maksimum default
+const turboSpeed = 0.2; // Kecepatan maksimum saat Turbo Mode aktif
 const friction = 0.97;
 const rotationSpeed = 0.02;
 let isAccelerating = false;
 let isReversing = false;
 let isTurningLeft = false;
 let isTurningRight = false;
+let isTurboMode = false;
 let isThirdPersonView = false;
 const carBoundingBox = new THREE.Box3();
 
-const lapTimeDisplay = document.getElementById("lap-time-display"); // Ambil elemen HTML untuk waktu lap
-let timerStarted = false; // Status apakah timer sudah dimulai
-let lapStartTime = 0; // Waktu awal lap
-let lapTime = 0; // Total waktu lap
-let hasPassedTrackAcc = false; // Apakah mobil sudah melewati track_acc
+const lapTimeDisplay = document.getElementById("lap-time-display"); 
+const lapHistoryDisplay = document.getElementById("lap-history-display"); 
+let timerStarted = false;
+let lapStartTime = 0; 
+let lapTimes = []; 
+let hasPassedTrackAcc = false;
 
 const loadCar = (scene) => {
   const loader = new GLTFLoader();
@@ -58,6 +61,11 @@ const controlCar = (keyCode, isKeyDown) => {
     case "d":
       isTurningRight = isKeyDown;
       break;
+    case "Shift": // Aktifkan atau nonaktifkan Turbo Mode
+      isTurboMode = isKeyDown;
+      maxSpeed = isTurboMode ? turboSpeed : 0.1; // Atur kecepatan maksimum
+      console.log(`Turbo Mode: ${isTurboMode ? "ON" : "OFF"}`);
+      break;
     case "k":
       if (isKeyDown) {
         isThirdPersonView = !isThirdPersonView;
@@ -65,7 +73,7 @@ const controlCar = (keyCode, isKeyDown) => {
       break;
     case "r":
       if (isKeyDown) {
-        resetCarPosition(); // Panggil fungsi reset
+        resetCarPosition(); // Reset posisi mobil dan timer
       }
       break;
     default:
@@ -98,7 +106,7 @@ const updateCarPosition = (camera) => {
   if (timerStarted) {
     const currentTime = performance.now();
     const elapsedTime = (currentTime - lapStartTime) / 1000; // Waktu dalam detik
-    lapTimeDisplay.textContent = `Lap Time: ${elapsedTime.toFixed(2)} s`;
+    lapTimeDisplay.textContent = `Current Lap Time: ${elapsedTime.toFixed(2)} s`;
   }
 
   // Hitung posisi baru mobil
@@ -110,9 +118,7 @@ const updateCarPosition = (camera) => {
 
   // Perbarui bounding box mobil
   const carBoundingBox = new THREE.Box3().setFromObject(car);
-  console.log("Car bounding box:", carBoundingBox); // Debug bounding box mobil
 
-  // Deteksi garis finish
   if (trackAccBoundingBox && carBoundingBox.intersectsBox(trackAccBoundingBox)) {
     if (!timerStarted && !hasPassedTrackAcc) {
       // Mulai timer pertama kali
@@ -120,24 +126,30 @@ const updateCarPosition = (camera) => {
       lapStartTime = performance.now();
       console.log("Timer started!");
     } else if (!hasPassedTrackAcc) {
-      // Catat waktu lap tanpa meng-reset timer
+      // Catat waktu lap
       const currentTime = performance.now();
-      lapTime = currentTime - lapStartTime;
-      console.log(`Lap completed in ${(lapTime / 1000).toFixed(2)} seconds`);
-
-      // Perbarui teks pada layar dengan waktu lap terakhir
-      lapTimeDisplay.textContent = `Lap Time: ${(lapTime / 1000).toFixed(2)} s`;
-
-      timerStarted = false;
+      const lapTime = (currentTime - lapStartTime) / 1000; // Hitung waktu lap
+      lapTimes.push(lapTime); // Simpan waktu lap ke dalam array
+      console.log(`Lap completed in ${lapTime.toFixed(2)} seconds`);
+  
+      // Tampilkan semua waktu lap di layar
+      const lapHistoryDisplay = document.getElementById("lap-history-display");
+      lapHistoryDisplay.style.display = "block"; // Tampilkan riwayat lap
+      lapHistoryDisplay.innerHTML = lapTimes
+        .map((time, index) => `Lap ${index + 1}: ${time.toFixed(2)} s`)
+        .join("<br>");
+  
+      // Reset timer untuk lap berikutnya
+      lapStartTime = performance.now();
     }
     hasPassedTrackAcc = true;
   } else {
     hasPassedTrackAcc = false;
   }
-
+  
   // Deteksi tabrakan dengan pohon
   let collisionDetected = false;
-
+  
   for (let treeBox of treeBoundingBoxes) {
     if (carBoundingBox.intersectsBox(treeBox)) {
       collisionDetected = true;
@@ -145,7 +157,7 @@ const updateCarPosition = (camera) => {
       break;
     }
   }
-
+  
   // Deteksi tabrakan dengan kaktus
   for (let cactusBox of cactusBoundingBoxes) {
     if (cactusBox && carBoundingBox.intersectsBox(cactusBox)) {
@@ -154,12 +166,13 @@ const updateCarPosition = (camera) => {
       break;
     }
   }
-
+  
   // Jika ada tabrakan, rollback posisi
   if (collisionDetected) {
     car.position.set(oldX, car.position.y, oldZ);
     velocity.z = 0; // Hentikan kecepatan mobil
   }
+  
 
   // Perbarui rotasi mobil
   car.rotation.y = rotation;
@@ -188,14 +201,14 @@ const resetCarPosition = () => {
   velocity = { x: 0, z: 0 }; // Kecepatan awal
   rotation = 0; // Rotasi awal
 
-  // Reset timer
-  timerStarted = false; // Timer dihentikan
-  lapTime = 0; // Reset waktu lap
-  lapStartTime = 0; // Reset waktu awal lap
-  lapTimeDisplay.textContent = "Lap Time: 0.00 s"; // Tampilkan kembali teks awal untuk timer
+  // Reset timer dan riwayat lap
+  timerStarted = false;
+  lapStartTime = 0;
+  lapTimes = [];
+  lapTimeDisplay.textContent = "Lap Time: 0.00 s";
+  lapHistoryDisplay.innerHTML = ""; // Kosongkan riwayat lap
   console.log("Car and timer reset to initial state");
 };
-
 
 if (!isAccelerating && !isReversing) {
   velocity.x *= friction;
