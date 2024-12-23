@@ -8,6 +8,7 @@ import loadStadion from "./stadion";
 import loadTrackAcc from "./track_acc";
 import { loadTrees, treeBoundingBoxes } from "./tree";
 import loadChampions from "./champion";
+import loadHeli from "./heli";
 
 const scene = new THREE.Scene();
 
@@ -26,6 +27,7 @@ loadCar(scene);
 loadTrees(scene, treePositions);
 loadTrackAcc(scene);
 loadChampions(scene);
+loadHeli(scene);
 
 window.addEventListener("keydown", (event) => {
   controlCar(event.key, true);

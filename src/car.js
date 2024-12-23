@@ -24,7 +24,7 @@ const loadCar = (scene) => {
     function (gltf) {
       car = gltf.scene;
       car.scale.set(0.8, 0.8, 0.8);
-      car.position.set(21, 0, 0);
+      car.position.set(21, 1, 0);
       scene.add(car);
       carBoundingBox.setFromObject(car);
     },
@@ -134,7 +134,7 @@ const updateCarPosition = (camera) => {
 
   // Perbarui kamera (third-person atau default)
   if (isThirdPersonView && camera) {
-    const offset = 5;
+    const offset = 7;
     camera.position.set(
       car.position.x - Math.sin(rotation) * offset,
       car.position.y + 5,

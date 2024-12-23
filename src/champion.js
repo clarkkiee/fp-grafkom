@@ -7,7 +7,7 @@ const loadChampions = (scene) => {
     function (gltf) {
       const champions = gltf.scene;
       champions.scale.set(1, 1, 1);
-      champions.position.set(15, 2, 0);
+      champions.position.set(15, 1, 0);
       scene.add(champions);
     },
     undefined,
