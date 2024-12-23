@@ -8,7 +8,7 @@ const loadTrack = (scene) => {
     loader.load('/models/baked-track.glb', function (gltf) {
         const track = gltf.scene;
         track.scale.set(2, 2, 2);
-        track.position.set(-25, 0, 0);
+        track.position.set(-25, -1, 0);
         track.updateMatrixWorld(true); // Terapkan transformasi global
         scene.add(track);
 

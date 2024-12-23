@@ -24,7 +24,7 @@ const loadCar = (scene) => {
     function (gltf) {
       car = gltf.scene;
       car.scale.set(0.8, 0.8, 0.8);
-      car.position.set(21, 1, 0);
+      car.position.set(21, 0, 0);
       scene.add(car);
       carBoundingBox.setFromObject(car);
     },
