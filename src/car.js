@@ -94,6 +94,13 @@ const updateCarPosition = (camera) => {
     rotation -= rotationSpeed;
   }
 
+  // Perbarui timer jika berjalan
+  if (timerStarted) {
+    const currentTime = performance.now();
+    const elapsedTime = (currentTime - lapStartTime) / 1000; // Waktu dalam detik
+    lapTimeDisplay.textContent = `Lap Time: ${elapsedTime.toFixed(2)} s`;
+  }
+
   // Hitung posisi baru mobil
   const newX = car.position.x + Math.sin(rotation) * velocity.z;
   const newZ = car.position.z + Math.cos(rotation) * velocity.z;
@@ -105,30 +112,32 @@ const updateCarPosition = (camera) => {
   const carBoundingBox = new THREE.Box3().setFromObject(car);
   console.log("Car bounding box:", carBoundingBox); // Debug bounding box mobil
 
-  // Deteksi tabrakan
-  let collisionDetected = false;
-
+  // Deteksi garis finish
   if (trackAccBoundingBox && carBoundingBox.intersectsBox(trackAccBoundingBox)) {
-    if (!timerStarted) {
+    if (!timerStarted && !hasPassedTrackAcc) {
+      // Mulai timer pertama kali
       timerStarted = true;
       lapStartTime = performance.now();
       console.log("Timer started!");
     } else if (!hasPassedTrackAcc) {
-      lapTime = performance.now() - lapStartTime;
+      // Catat waktu lap tanpa meng-reset timer
+      const currentTime = performance.now();
+      lapTime = currentTime - lapStartTime;
       console.log(`Lap completed in ${(lapTime / 1000).toFixed(2)} seconds`);
 
-      // Perbarui teks pada layar
+      // Perbarui teks pada layar dengan waktu lap terakhir
       lapTimeDisplay.textContent = `Lap Time: ${(lapTime / 1000).toFixed(2)} s`;
 
       timerStarted = false;
     }
-
     hasPassedTrackAcc = true;
   } else {
     hasPassedTrackAcc = false;
   }
 
-  // Cek tabrakan dengan pohon
+  // Deteksi tabrakan dengan pohon
+  let collisionDetected = false;
+
   for (let treeBox of treeBoundingBoxes) {
     if (carBoundingBox.intersectsBox(treeBox)) {
       collisionDetected = true;
@@ -137,16 +146,12 @@ const updateCarPosition = (camera) => {
     }
   }
 
-  // Cek tabrakan dengan kaktus
-  if (cactusBoundingBoxes.length === 0) {
-    console.error("No cactus bounding boxes found!");
-  } else {
-    for (let cactusBox of cactusBoundingBoxes) {
-      if (cactusBox && carBoundingBox.intersectsBox(cactusBox)) {
-        collisionDetected = true;
-        console.log("Collision with cactus detected!");
-        break;
-      }
+  // Deteksi tabrakan dengan kaktus
+  for (let cactusBox of cactusBoundingBoxes) {
+    if (cactusBox && carBoundingBox.intersectsBox(cactusBox)) {
+      collisionDetected = true;
+      console.log("Collision with cactus detected!");
+      break;
     }
   }
 
@@ -162,7 +167,11 @@ const updateCarPosition = (camera) => {
   // Perbarui kamera (third-person atau default)
   if (isThirdPersonView && camera) {
     const offset = 7;
-    camera.position.set(car.position.x - Math.sin(rotation) * offset, car.position.y + 5, car.position.z - Math.cos(rotation) * offset);
+    camera.position.set(
+      car.position.x - Math.sin(rotation) * offset,
+      car.position.y + 5,
+      car.position.z - Math.cos(rotation) * offset
+    );
     camera.lookAt(car.position.x, car.position.y, car.position.z);
   } else if (camera) {
     camera.position.set(20, 20, 20);
@@ -186,6 +195,7 @@ const resetCarPosition = () => {
   lapTimeDisplay.textContent = "Lap Time: 0.00 s"; // Tampilkan kembali teks awal untuk timer
   console.log("Car and timer reset to initial state");
 };
+
 
 if (!isAccelerating && !isReversing) {
   velocity.x *= friction;
